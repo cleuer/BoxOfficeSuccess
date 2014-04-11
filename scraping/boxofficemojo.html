@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+
+    <script src="../libs/jquery-1.10.1.js"></script>
+    <script src="../libs/jquery.xdomainajax.js"></script>
+    <script src="../libs/d3.v3.min.js"></script>
+    <script src="../libs/FileSaver.js"></script>
+</head>
+<body>
+
+<script>
+   // var convertToInt;
+    var site = 'http://www.boxofficemojo.com';
+    var years = [2012,2013];
+
+   for (var y in years ) {
+       for (var w=1; w <= 52; w++) {
+           getMovieData(w,years[y]);
+       }
+   }
+
+   function getMovieData (w,y) {
+    $.ajax({
+        url: "http://www.boxofficemojo.com/weekly/chart/?view=weekly&yr="+ y+"&wk="+ w.toString(),
+        type: 'GET',
+        cache: false,
+        success: function(data) {
+            var root,allData, body, table;
+            root = $("<div></div>");
+            root.html(data.responseText);
+
+            var weekDates = root.find('table > tbody > tr > td > h2').text().replace(/\,/g, '');
+
+           // var content = root.find("#content"); // find all the nodes that have ID "co   ntent"
+           // var h2s = content.find(".mw-headline"); // search in all "content" nodes for nodes of class ".mw-headline"
+
+            var csvLines = [];
+
+            var headerLine = "weekDates,title,url,weeklyGross,theatreCount,totalGross,budget,week,year";
+            csvLines.push(headerLine);
+
+            root.find('center > center > table> tbody > tr > td > table > tbody > tr:not(:first-child, :last-child)').each(
+                function(i, data) {
+                    //console.log(i,data);
+                    var csvLine = '';
+
+                  //  if (i != 0)  {  //ignore header
+
+                        // title
+                        var title = $(this).find('td:nth-child(3) strong').text();
+
+                        //url
+                        var url = site + $(this).find('td:nth-child(3) a').attr('href');
+
+                        //weeklyGrossFmt
+                        var weeklyGrossFmt = $(this).find('td:nth-child(5) font').text();
+                        var weeklyGross = weeklyGrossFmt.trim().replace(/\,/g, '').replace(/\$/g, ''); //no format
+
+                        //theatreCount
+                        var theatreCount = $(this).find('td:nth-child(7) font').text().replace(/\,/g, '');
+
+                        //totalGross
+                        var totalGrossFmt = $(this).find('td:nth-child(10) font').text();
+                        var totalGross = totalGrossFmt.trim().replace(/\,/g, '').replace(/\$/g, ''); //no format
+
+                        //budget
+                        var budgetFmt = $(this).find('td:nth-child(11) font').text();
+                        var budget = 0;
+                        if (budgetFmt != '-') {
+                            budget =   budgetFmt.trim().replace(/\$/g, '');
+                        }
+
+                        //week
+                        var week = $(this).find('td:nth-child(12) font').text();
+
+                        csvLine = weekDates + ',' + title + ',' + url + ','  + weeklyGross + ','
+                         + theatreCount + ','  + totalGross + ',' + budget + ',' + week + ',' + y.toString();
+
+                        csvLines.push(csvLine);
+                   //  }
+
+                });
+
+			saveToFile(csvLines,"boxoffice"+y+"week"+ w.toString()+".csv");
+        },
+        error: function() {
+            return console.log("error");
+        }
+    });
+    }
+
+    convertToInt = function(s) {
+        return parseInt(s.replace(/,/g, ""), 10);
+    };
+	
+    /* takes an array of strings
+       and writes them line by line into a file given by filename
+     */
+    var saveToFile = function(arrayOfLines, fileName) {
+       /* adds linebreaks at the end*/
+       var blob, blobText;
+       blobText = arrayOfLines.map(function(d) {
+         if (d.endsWith("\n")) {
+           return d;
+         } else {
+           return d + "\n";
+         }
+       });
+       blob = new Blob(blobText, {
+         type: "text/plain;charset=utf-8"
+       });
+       return saveAs(blob, fileName);
+     };
+
+     String.prototype.endsWith = function(suffix) {
+       return this.indexOf(suffix, this.length - suffix.length) !== -1;
+     };
+
+</script>
+
+
+</body>
+</html>
