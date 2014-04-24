@@ -3,7 +3,8 @@
  * Box Office Success
  * April 2014
  */
-    var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width, circleSize, maxWeeklyGross;
+    var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
+        circleSize, maxWeeklyGross, maxMoviesPerWeek, vis, xScale, yScale, yAxis, xAxis, rScale, animateDuration;
 
     margin = {
         top: 50,
@@ -15,12 +16,20 @@
     width = 1200 - margin.left - margin.right;
 
     height = 600 - margin.bottom - margin.top;
-
+1
     bbVis = {
         x: 100,
         y: 10,
         w: width - 100,
         h: height - 100
+    };
+
+
+    bbOverview = {
+        x: 0,
+        y: 10,
+        w: width,
+        h: 50
     };
 
     circleSize = {
@@ -31,6 +40,11 @@
     }
 
     maxWeeklyGross = 25000000;  //just 25m for now with smaller prototype datafiles
+    maxMoviesPerWeek = 20;
+    likesDefault = 1000000;
+    animateWeeks = 12;  // 3 months to animate movies
+    animateDuration = 3000;  //milliseconds for complete animation
+
 
 
     svg = d3.select("#mainVis").append("svg").attr({
@@ -42,7 +56,7 @@
 
 
     var color = d3.scale.category10();
-    color.domain(['Action','Drama','Comedy','Family','Sci-fi','Horror']);  //circles are colored by movie category
+    color.domain(['Action','Drama','Comedy','Family','Sci-fi','Horror','Undetermined']);  //circles are colored by movie category
 
     var movieArr = [];   // each element represents 1 week of movie data. see progress book
                             // weekDates - string for week, ex:January 4-10 2013
@@ -50,50 +64,76 @@
                             // movies   - array of data for each movie in week
                             //title, weeklyGross, week, theatreCount, budget, likes, category etc
 
-    d3.csv("data/boxoffice2012master.csv", function(movieData) {
+    d3.csv("/data/boxoffice2012master.csv", function(movieData) {
 
         // get estimate categories from first row of data
         //pCats = d3.keys(data[0]).filter(function(key) { return key !== "Year"; });
         //color.domain(pCats);  //each category gets a color
 
 
-       // Prototype , only smallest dataSet to populate movieArr.
-        d3.csv("data/boxoffice2013week1.csv", function(weeklyData) {
+        d3.csv("/data/boxoffice2012combined.csv", function(boxOfficeData) {
 
             var movies = [];    // finalized array of movies in week including master attributes: likes, category etc.
+            var movieWeekCnt = 0;
+            var weeklyGrossSum = 0;
             var filterArr = [];  //filtered out only movies listed in master csv
-            filterArr = weeklyData.filter (  function (d,i) {
+
+
+            //no filtering for now
+            filterArr = boxOfficeData.filter (  function (d,i) {
                 
-                    for (var m = 0; m < movieData.length; m++) {
+                 /*   for (var m = 0; m < movieData.length; m++) {
                           if (movieData[m].title == d.title) {
                               return true;
                           }
                     }
                     return false;
+                  */
+                return true;
+
             });
 
-            filterArr.forEach( function (d) {
-                var summary;
-                for (var m = 0; m < movieData.length; m++) {
-                    if (movieData[m].title == d.title) {
-                        summary = movieData[m];
-                    }
-                }
-                var movie =  {
-                    title: d.title,
-                    theatreCount: +d.theatreCount,
-                    totalGross: +d.totalGross,
-                    url: d.url,
-                    week: +d.week,
-                    weekDates: d.weekDates,
-                    weeklyGross: +d.weeklyGross,
-                    year: d.year,
-                    likes: summary.likes,
-                    category: summary.category,
-                    rank: +summary.rank
-                };
-                movies.push(movie);
+            var prevWeekDates;
+            filterArr.forEach( function (d, i) {
 
+                //new week of movie data
+                if (prevWeekDates != d.weekDates && i != 0) {
+
+                    weeklyGrossSum = d3.sum(movies, function (d) {
+                        return d.weeklyGross;
+                    });
+
+                    movieArr.push({
+                        weekDates:movies[0].weekDates,
+                        weeklyGrossSum: weeklyGrossSum,
+                        movies:movies
+                    });
+                    movies = [];  //clear out movies
+                    movieWeekCnt = 0;
+                }
+
+                movieWeekCnt++;
+                weeklyGrossSum +=  +d.weeklyGross;
+
+                var summary = getSummary(d.title);
+                var movie =  {
+                        title: d.title,
+                        theatreCount: +d.theatreCount,
+                        totalGross: +d.totalGross,
+                        url: d.url,
+                        week: +d.week,
+                        weekDates: d.weekDates,
+                        weeklyGross: +d.weeklyGross,
+                        year: d.year,
+                        likes: summary.likes,
+                        category: summary.category,
+                        rank: +summary.rank
+                 };
+
+                if (movieWeekCnt <= maxMoviesPerWeek) {
+                        movies.push(movie);
+                }
+                prevWeekDates = d.weekDates;
             });
 
       /*      var movieArr = [];   // each element represents 1 week of movie data. see progress book
@@ -102,46 +142,47 @@
             // movies   - array of data for each movie in week
             //title, weeklyGross, week, theatreCount, budget, likes, category etc
         */
-            var weeklyGrossSum = d3.sum(movies, function (d) {
-                  return d.weeklyGross;
-            });
 
-            movieArr.push({
-                 weekDates:movies[0].weekDates,
-                 weeklyGrossSum: weeklyGrossSum,
-                 movies:movies
-            });
             console.log('movieArr',movieArr);
 
             return createVis();
 
         });
 
+        function getSummary (title) {
+            for (var m = 0; m < movieData.length; m++) {
+                if (movieData[m].title == title) {
+                    return movieData[m];
+                }
+            }
+            return {likes:likesDefault, category:'Undetermined', rank:100};  //default for non-filtered
+        }
     });
+
 
 createVis = function() {
 
     var displayIdx = 0;  // display index for movieArr prototype hardcoded to zero
 
-    var yScale = d3.scale.linear()
+    yScale = d3.scale.linear()
         .domain([0,maxWeeklyGross])
         .range([bbVis.h, 0]);
 
-    var yAxis = d3.svg.axis().scale(yScale).orient("left");
+    yAxis = d3.svg.axis().scale(yScale).orient("left");
 
-    var xScale = d3.scale.linear()
-        .domain([0,d3.max(movieArr[displayIdx].movies.map(function(d) { return d.week; }))])
+    xScale = d3.scale.linear()
+        .domain([0,animateWeeks])
         .range([0,  bbVis.w]);
 
-    var  xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+    xAxis = d3.svg.axis().scale(xScale).orient("bottom");
 
-    var rScale = d3.scale.linear()
+    rScale = d3.scale.linear()
         .domain([0,circleSize.maxLikes])
         .range([0, circleSize.maxRadius]);
 
 
     // example that translates to the bottom left of our vis space:
-    var vis = svg.append("g").attr({
+    vis = svg.append("g").attr({
 		      "transform": "translate(" + bbVis.x + "," + (bbVis.y) + ")"
     });
 
@@ -181,31 +222,6 @@ createVis = function() {
         .style("fill", "darkslateblue")
         .text(movieArr[displayIdx].weekDates);
 
-    var movieGroups = vis.selectAll(".moviegroup")
-        .data(movieArr[displayIdx].movies)
-        .enter()
-        .append("g")
-        .classed("moviegroup",true);
-
-    var movies = movieGroups
-        .append("circle")
-        .attr("stroke", "blue")
-        .classed("movie",true)
-        .attr("fill", function(d) { return color(d.category); })
-        .attr("cx", function(d) { return xScale(d.week);})
-        .attr("cy", function(d) { return yScale(d.weeklyGross); })
-        .attr("r", function(d) { return rScale(d.likes); });
-
-    var movielabels = movieGroups
-        .append("text")
-        .classed("movielabel",true)
-        .attr("x", function(d) { console.log(d); return xScale(d.week);})
-        .attr("y", function(d) { return yScale(d.weeklyGross);})
-        .attr("dx", function(d) { return circleSize.labelMoveRight ;})
-        .attr("dy",  function(d) { return circleSize.labelMoveDown;})
-        .attr("text-anchor","middle")
-        .text(function(d) { console.log(d.title); return (d.title + ", Likes "+ abbreviateNumber(d.likes) ); });
-
     var legend = vis.selectAll(".legend")
         .data(color.domain())
         .enter().append("g")
@@ -224,9 +240,79 @@ createVis = function() {
         .classed("legendlabel",true)
         .attr("dy", ".35em")
         .style("text-anchor", "end")
-        .text(function(d) {console.log(d); return d;});
+        .text(function(d) {return d;});
 
-    };
+    animateVis('January 27-February 2 2012');
+}
+
+function weekIndex(weekDates) {
+    for(var i=0; i< movieArr.length; i++) {
+        if (movieArr[i].weekDates == weekDates)
+            return i;
+    }
+}
+
+function moveMovie() {
+    var movie = d3.select(this);
+    var week = movie.data()[0].week;  //fix
+
+    (function move() {
+        console.log("move, week=",week);
+
+        if (week <= animateWeeks) {
+        movie
+            .transition()
+            .duration()
+            .attr("cx", function(d) {
+                return xScale(week);})
+            .each("end", move);
+        week++;
+        } else {
+            movie.remove();
+        }
+    })();
+}
+
+function animateVis (weekDates) {
+
+    var w = weekIndex(weekDates);
+
+    var movieGroups = vis.selectAll(".moviegroup")
+        .data(movieArr[w].movies)
+        .enter()
+        .append("g")
+        .classed("moviegroup",true);
+
+    var movies = movieGroups
+        .append("circle")
+        .attr("stroke", "blue")
+        .classed("movie",true)
+        .attr("fill", function(d) { return color(d.category); })
+        .attr("cx", function(d) { return xScale(d.week);})
+        .attr("cy", function(d) { return yScale(d.weeklyGross); })
+        .attr("r", function(d) { return rScale(d.likes); });
+
+    svg.selectAll("circle")
+        .transition()
+        .duration(animateDuration)
+        .delay(500)
+        .each (moveMovie);
+
+
+
+    /*
+    var movielabels = movieGroups
+        .append("text")
+        .classed("movielabel",true)
+        .attr("x", function(d) { return xScale(d.week);})
+        .attr("y", function(d) { return yScale(d.weeklyGross);})
+        .attr("dx", function(d) { return circleSize.labelMoveRight ;})
+        .attr("dy",  function(d) { return circleSize.labelMoveDown;})
+        .attr("text-anchor","middle")
+        .text(function(d) {return (d.title + ", Likes "+ abbreviateNumber(d.likes) ); });
+*/
+
+};
 
 
 // Citing Phillip Lenssen
