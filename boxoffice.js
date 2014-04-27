@@ -41,7 +41,7 @@ circleSize = {
 }
 
 //tuning parameters
-AxisMaxWeeklyGross = 26000000;  //just 25m for now with smaller prototype datafiles
+AxisMaxWeeklyGross = 90000000;  //
 maxMoviesPerWeek = 50;  //maximum movies to animate
 likesDefault = 5000000;
 animateWeeks = 12;  // 3 months to animate movies
@@ -335,7 +335,6 @@ function copyMovieObj (movie) {
 
 //adds movies to animation. appear on left at week 1
 function addMoviesToAnimation() {
-    if (wCounter == 1) {
 
     console.log('addMoviesToAnimation');
     var filterWeekMovies = [];
@@ -349,13 +348,11 @@ function addMoviesToAnimation() {
               return true;  // return all movies at min weekly gross
         }  else {return false;}
     });
-
     }
-    //else {
 
     //populate week 1 from next movieArr, these will start animation at position zero
-        var weekIndex = firstWeekIndex + wCounter; //next index in movieArr
-        if (weekIndex < movieArr.length) {
+    var weekIndex = firstWeekIndex + wCounter; //next index in movieArr
+    if (weekIndex < movieArr.length) {
             var zeroWeekMovies =movieArr[weekIndex].movies.filter (  function (d) {
                 if (d.weeklyGross >= minWeeklyGrossFilter && d.week == 1  ) {
                     return true;  // return all movies at min weekly gross
@@ -369,11 +366,9 @@ function addMoviesToAnimation() {
                 zeroMovie.weeklyGross=0;
                 cpZeroWeekMovies.push(zeroMovie);
             });
-        }
+    }
 
-        var animateWeekMovies = filterWeekMovies.concat(cpZeroWeekMovies);
-
-    //}
+    var animateWeekMovies = filterWeekMovies.concat(cpZeroWeekMovies);
 
     var groupClass = 'moviegroup'+ wCounter.toString();
     var movieGroups = vis.selectAll('.'+groupClass)
@@ -420,7 +415,6 @@ function addMoviesToAnimation() {
      */
 
     wCounter++;
-    }
 }
 
 function animateVis (weekDates) {
