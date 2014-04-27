@@ -5,7 +5,7 @@
  */
 var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
     circleSize, maxWeeklyGross, maxMoviesPerWeek, vis, xScale, yScale, yAxis, xAxis, rScale, animateDuration,
-    firstWeekIndex, totalGrossFilter, stopAnimationMinWeeklyGross, minWeeklyGrossFilter;
+    firstWeekIndex, minTotalGrossFilter, stopAnimationMinWeeklyGross, minWeeklyGrossFilter, maxTotalGrossFilter;
 
 margin = {
     top: 50,
@@ -45,12 +45,14 @@ AxisMaxWeeklyGross = 26000000;  //just 25m for now with smaller prototype datafi
 maxMoviesPerWeek = 50;  //maximum movies to animate
 likesDefault = 5000000;
 animateWeeks = 12;  // 3 months to animate movies
-animateDuration = 3000;  //milliseconds for complete animation
-totalGrossFilter = 30000000; //total gross minimum in order be displayed
-stopAnimationMinWeeklyGross = 500000;  //once weekly gross drops to minimum, stop animation and display movie
+animateDuration = 20000;  //milliseconds for complete animation
+minTotalGrossFilter = 25000000; //total gross minimum in order be displayed
+maxTotalGrossFilter = 1000000000;
+stopAnimationMinWeeklyGross = 100000;  //once weekly gross drops to minimum, stop animation and display movie
 minWeeklyGrossFilter = 3000000; // Minimum weekly gross for first week of animation in order to be displayed
 
-//other
+
+//animation counter
 wCounter = 1;
 
 
@@ -81,7 +83,7 @@ d3.csv("/data/boxoffice2012master.csv", function(movieData) {
 
         //no filtering for now
         filterArr = boxOfficeData.filter (  function (d,i) {
-            if (d.totalGross >= totalGrossFilter) return true;
+            if (d.totalGross >= minTotalGrossFilter) return true;
              else return false;
         });
 
@@ -173,6 +175,9 @@ createVis = function() {
         .domain([0,circleSize.maxLikes])
         .range([0, circleSize.maxRadius]);
 
+    stopAnimatioinOffsetScale = d3.scale.linear()//fix: find better way to distribute
+        .domain([0,maxTotalGrossFilter])
+        .range([0,1]);    //used to distribute final location according to gross so they are not stacked
 
     // example that translates to the bottom left of our vis space:
     vis = svg.append("g").attr({
@@ -266,29 +271,31 @@ function movieWeekData (title, weekIndex) {
 
 function moveMovie() {
 
+    console.log('moveMovie');
     var movie = d3.select(this);
     var mData = movieNodeData (movie);
     var week = mData.week;
-    var aWeek = 1;  //animation counter , always <= animateWeeks
+    var aWeek = wCounter;
     var aData = [];  //new data to bind after every animation
 
-  // if (mData.title == 'Mission: Impossible - Ghost Protocol') {
+   //if (mData.title == 'Red Tails') {
 
     (function move() {
         if (aWeek <= (animateWeeks)) {
 
-            aData[0] = movieWeekData (mData.title, weekIndex(mData.weekDates) + aWeek); //gets movie data for current animation
-     //       console.log('move title=', mData.title,'week=',week,'aWeek=',aWeek,'aData[0]=',aData[0]);
-
+            //gets movie data for animation to next week
+            aData[0] = movieWeekData (mData.title, firstWeekIndex + aWeek);
+            console.log('aData[0]',aData[0]);
             if (aData[0] != null && aData[0].weeklyGross >= stopAnimationMinWeeklyGross ) {
+                var movieClass = 'm-movie'+ aWeek.toString();
                 movie
                     .data(aData)
                     .transition()
                     .duration(animateDuration/animateWeeks)
                     .ease('linear')
-                    .attr("cx", function(d) {return xScale(week);})
+                    .attr("cx", function(d) {return xScale(week + 1);})
                     .attr("cy", function(d) { return yScale(d.weeklyGross); })
-                    .attr("class", 'movie '+mData.title)
+                    .attr("class",  function (d) {return movieClass+' '+ d.title})
                     .each("end", move);
 
                 week++;
@@ -298,7 +305,7 @@ function moveMovie() {
                     .transition()
                     .duration(animateDuration/animateWeeks)
                     .ease('linear')
-                    .attr("cx", function(d) {return xScale(week + Math.random()); });
+                    .attr("cx", function(d) {return xScale(week + stopAnimatioinOffsetScale(d.totalGross)); });
             }
 
         } else {
@@ -309,73 +316,92 @@ function moveMovie() {
         aWeek++;
     })();
 
-   // }
+  // }
+}
+
+function copyMovieObj (movie) {
+   return {
+    category: movie.category,
+    likes: movie.likes,
+    rank: movie.rank,
+    theatreCount: movie.theatreCount,
+    title: movie.title,
+    totalGross: movie.totalGross,
+    url: movie.url,
+    week: movie.week,
+    weeklyGross: movie.weeklyGross,
+    year: movie.year}
 }
 
 //adds movies to animation. appear on left at week 1
 function addMoviesToAnimation() {
-    console.log('addMoviesToAnimation',wCounter);
-    wCounter++;
+    if (wCounter == 1) {
 
-   /*
-    var w = firstWeekIndex+week-1;  // as animation moves, index of movieArr for first week changes
-    if (week > 1) {   // add movies to animation , after animation moves to week 2,3,4 etc
+    console.log('addMoviesToAnimation');
+    var filterWeekMovies = [];
+    var cpZeroWeekMovies = [];
 
-        //get week 1 movies to add to animation
-        var firstWeekMovies = movieArr[w].movies.filter (  function (d,i) {
-            if (d.week=1) {
-                return true;
-            }  else return false
+    if (wCounter == 1) {
 
-        });
-
-   //     console.log('firstWeekMovies',firstWeekMovies);
-
-        var movieGroups = vis.selectAll(".moviegroup")
-            .data(firstWeekMovies, function(d) { return d.title; })
-            .enter()
-            .append("g")
-            .classed("moviegroup",true);
-
-        var movies = movieGroups
-            .append("circle")
-            .attr("stroke", "blue")
-            .classed("movie",true)
-            .attr("fill", function(d) { return color(d.category); })
-            .attr("cx", function(d) { return xScale(d.week);})
-            .attr("cy", function(d) { return yScale(d.weeklyGross); })
-            .attr("r", function(d) { return rScale(d.likes); });
-    }
-    */
-}
-
-function animateVis (weekDates) {
-
-    firstWeekIndex = weekIndex(weekDates);
-
-    //tuning: filter movies by minimum weekly gross in order display in animation
-    var filterWeekMovies =movieArr[firstWeekIndex].movies.filter (  function (d) {
-        if (d.weeklyGross >= minWeeklyGrossFilter ) {
-            return true;
+    //tuning: also, filter movies by minimum weekly gross
+    filterWeekMovies =movieArr[firstWeekIndex].movies.filter (  function (d) {
+        if (d.weeklyGross >= minWeeklyGrossFilter  ) {
+              return true;  // return all movies at min weekly gross
         }  else {return false;}
     });
 
-    var movieGroups = vis.selectAll(".moviegroup")
-        .data(filterWeekMovies)
+    }
+    //else {
+
+    //populate week 1 from next movieArr, these will start animation at position zero
+        var weekIndex = firstWeekIndex + wCounter; //next index in movieArr
+        if (weekIndex < movieArr.length) {
+            var zeroWeekMovies =movieArr[weekIndex].movies.filter (  function (d) {
+                if (d.weeklyGross >= minWeeklyGrossFilter && d.week == 1  ) {
+                    return true;  // return all movies at min weekly gross
+                }  else {return false;}
+            });
+
+            // copy zeroWeekMovies array to new one with zeros for week and weeklyGross
+            zeroWeekMovies.forEach ( function (d) {
+                var zeroMovie = copyMovieObj(d);
+                zeroMovie.week=0;
+                zeroMovie.weeklyGross=0;
+                cpZeroWeekMovies.push(zeroMovie);
+            });
+        }
+
+        var animateWeekMovies = filterWeekMovies.concat(cpZeroWeekMovies);
+
+    //}
+
+    var groupClass = 'moviegroup'+ wCounter.toString();
+    var movieGroups = vis.selectAll('.'+groupClass)
+        .data(animateWeekMovies)
         .enter()
         .append("g")
         .classed("moviegroup",true);
 
+    /*
+    movieGroups
+        .append("text")
+        .attr("x", function(d) { return xScale(d.week -1);})
+        .attr("y", function(d) { return yScale(0); })
+        .text(function(d) { return d.title; });
+*/
+    var movieClass = 'movie'+wCounter.toString();
     var movies = movieGroups
         .append("circle")
         .attr("stroke", "blue")
-        .attr("class",  function(d) { return 'movie '+d.title;})
+//        .classed(movieClass,true)
+        .attr("class",  function (d) {return movieClass+' '+ d.title})
         .attr("fill", function(d) { return color(d.category); })
         .attr("cx", function(d) { return xScale(d.week);})
         .attr("cy", function(d) { return yScale(d.weeklyGross); })
         .attr("r", function(d) { return rScale(d.likes); });
 
-    svg.selectAll("circle")
+    var movieSelector = '.'+movieClass;
+    svg.selectAll(movieSelector)
         .transition()
         .duration(animateDuration)
         .delay(500)
@@ -393,10 +419,17 @@ function animateVis (weekDates) {
      .text(function(d) {return (d.title + ", Likes "+ abbreviateNumber(d.likes) ); });
      */
 
+    wCounter++;
+    }
+}
+
+function animateVis (weekDates) {
+
+    firstWeekIndex = weekIndex(weekDates);
+
     var w = 1;
     d3.timer(function() {
         if (w <= animateWeeks) {
-            console.log('w',w);
            setTimeout(addMoviesToAnimation, (animateDuration/animateWeeks * w));
             w++;
             return false;
