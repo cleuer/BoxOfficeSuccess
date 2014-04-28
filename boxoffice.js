@@ -6,7 +6,7 @@
 var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
     circleSize, maxWeeklyGross, maxMoviesPerWeek, vis, xScale, yScale, yAxis, xAxis, rScale, animateDuration,
     firstWeekIndex, minTotalGrossFilter, stopAnimationMinWeeklyGross, minWeeklyGrossFilter, maxTotalGrossFilter,
-    startAnimationWeek, animationInterrupt;
+    wCounter,startAnimationWeek, currentAnimation, startMovieDelay;
 
 margin = {
     top: 50,
@@ -52,12 +52,11 @@ maxTotalGrossFilter = 1000000000;
 stopAnimationMinWeeklyGross = 100000;  //once weekly gross drops to minimum, stop animation and display movie
 minWeeklyGrossFilter = 3000000; // Minimum weekly gross for first week of animation in order to be displayed
 startAnimationWeek ='January 27-February 2 2012';  //default week to start animation
+startMovieDelay = 300;  //milliseconds before the movie starts moving
 
 //globals, do not change
-wCounter = 1;  //animation counter
 movieSizeOption = 'theatre';  //sized by theatre by default. options are theatres,likes,audience,critics
-animationInterrupt = false;
-
+currentAnimation = 0;  // a unique animation number is incremented each time the animation is restarted by user
 
 svg = d3.select("#mainVis").append("svg").attr({
     width: width + margin.left + margin.right,
@@ -360,7 +359,11 @@ function copyMovieObj (movie) {
 }
 
 //adds movies to animation. appear on left at week 1
-function addMoviesToAnimation() {
+function addMoviesToAnimation(animation) {
+
+    console.log('addMoviesToAnimation',animation, currentAnimation,wCounter);
+
+    if (currentAnimation == animation) {   //prevents older timed animations from running
 
     var filterWeekMovies = [];
     var cpZeroWeekMovies = [];
@@ -395,6 +398,8 @@ function addMoviesToAnimation() {
 
     var animateWeekMovies = filterWeekMovies.concat(cpZeroWeekMovies);
 
+    console.log('animateWeekMovies',animateWeekMovies)
+
     var groupClass = 'moviegroup'+ wCounter.toString();
     var movieGroups = vis.selectAll('.'+groupClass)
         .data(animateWeekMovies)
@@ -420,11 +425,10 @@ function addMoviesToAnimation() {
         .attr("cy", function(d) { return yScale(d.weeklyGross); })
         .attr("r", function(d) { return rScale(d.likes); });
 
-    var movieSelector = '.'+movieClass;
-    svg.selectAll(movieSelector)
+    movies
         .transition()
         .duration(animateDuration)
-        .delay(500)
+        .delay(startMovieDelay)
         .each (moveMovie);
 
     /*
@@ -440,28 +444,34 @@ function addMoviesToAnimation() {
      */
 
     wCounter++;
+
+    }
+
 }
 
-function stopAnimation () {
-    svg.transition().duration(0);
+function removeMovieGroups () {
+    console.log('removeMovieGroups');
+    var movieGroups = vis.selectAll('.moviegroup');
+    movieGroups.remove();
 }
 
 function animateVis (weekDates) {
 
-    stopAnimation();
+    removeMovieGroups();
+    currentAnimation++;  //allows timed addMoviesAnimation to know if it's animating a stopped animation
+    wCounter = 1;   //week animation counter, restarts at 1 for every animation
     firstWeekIndex = weekIndex(weekDates);
 
     var w = 1;
     d3.timer(function() {
-        if (w <= animateWeeks && !animationInterrupt) {
-           setTimeout(addMoviesToAnimation, (animateDuration/animateWeeks * w));
+        if (w <= animateWeeks) {
+           setTimeout(addMoviesToAnimation, (animateDuration/animateWeeks * w),currentAnimation);
             w++;
             return false;
         } else return true;
     });
 
 };
-
 
 // Citing Phillip Lenssen
 // http://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn
@@ -491,7 +501,7 @@ $(".moviesize").click(function() {
         // restart animation with different sizes
         if (movieSizeOption != $(this).attr('id')) {
              movieSizeOption = $(this).attr('id');
-            animateVis(startAnimationWeek);
+            animateVis(movieArr[firstWeekIndex].weekDates);
          }
 
 });
