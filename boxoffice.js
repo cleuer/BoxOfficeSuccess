@@ -5,7 +5,8 @@
  */
 var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
     circleSize, maxWeeklyGross, maxMoviesPerWeek, vis, xScale, yScale, yAxis, xAxis, rScale, animateDuration,
-    firstWeekIndex, minTotalGrossFilter, stopAnimationMinWeeklyGross, minWeeklyGrossFilter, maxTotalGrossFilter;
+    firstWeekIndex, minTotalGrossFilter, stopAnimationMinWeeklyGross, minWeeklyGrossFilter, maxTotalGrossFilter,
+    startAnimationWeek, animationInterrupt;
 
 margin = {
     top: 50,
@@ -50,10 +51,12 @@ minTotalGrossFilter = 25000000; //total gross minimum in order be displayed
 maxTotalGrossFilter = 1000000000;
 stopAnimationMinWeeklyGross = 100000;  //once weekly gross drops to minimum, stop animation and display movie
 minWeeklyGrossFilter = 3000000; // Minimum weekly gross for first week of animation in order to be displayed
+startAnimationWeek ='January 27-February 2 2012';  //default week to start animation
 
-
-//animation counter
-wCounter = 1;
+//globals, do not change
+wCounter = 1;  //animation counter
+movieSizeOption = 'theatre';  //sized by theatre by default. options are theatres,likes,audience,critics
+animationInterrupt = false;
 
 
 svg = d3.select("#mainVis").append("svg").attr({
@@ -62,6 +65,24 @@ svg = d3.select("#mainVis").append("svg").attr({
 }).append("g").attr({
         transform: "translate(" + margin.left + "," + margin.top + ")"
     });
+
+controlsvg = d3.select("#controlVis").append("svg").attr({
+    width: 400,
+    height: 400
+}).append("g").attr({
+        transform: "translate(" +  (1400) + "," + 0 + ")"
+    });
+
+controlvis = controlsvg.append("g").attr({
+    "transform": "translate(" + 30 + "," + 30 + ")"
+});
+
+controlvis.append("text")
+    .attr("class", "weeklabel")
+    .attr("text-anchor", "start")
+    .attr("x", 0)
+    .attr("y", 0)
+    .text("123");
 
 
 var color = d3.scale.category10();
@@ -73,7 +94,7 @@ var movieArr = [];   // each element represents 1 week of movie data. see progre
 // movies   - array of data for each movie in week
 //title, weeklyGross, week, theatreCount, budget, likes, category etc
 
-d3.csv("./data/boxoffice2012master.csv", function(movieData) {
+d3.csv("./data/moviemaster.csv", function(movieData) {
     d3.csv("./data/boxoffice2012combined.csv", function(boxOfficeData) {
 
         var movies = [];    // finalized array of movies in week including master attributes: likes, category etc.
@@ -120,7 +141,10 @@ d3.csv("./data/boxoffice2012master.csv", function(movieData) {
                 weeklyGross: +d.weeklyGross,
                 year: d.year,
                 likes: summary.likes,
-                category: summary.category
+                category: summary.category,
+                audienceScore: +summary.audienceScore,
+                criticsScore: +summary.criticsScore,
+                releaseDate: summary.releaseDate
             };
 
             if (movieWeekCnt <= maxMoviesPerWeek) {
@@ -133,7 +157,7 @@ d3.csv("./data/boxoffice2012master.csv", function(movieData) {
          // weekDates - string for week, ex:January 4-10 2013
          // weeklyGrossSum  - sum of weekly gross for movies
          // movies   - array of data for each movie in week
-         //title, weeklyGross, week, theatreCount, budget, likes, category etc
+         //title, weeklyGross, week, theatreCount, budget, likes, category, audienceScore, criticsScore, releaseDate
          */
 
         console.log('movieArr',movieArr);
@@ -148,7 +172,9 @@ d3.csv("./data/boxoffice2012master.csv", function(movieData) {
                 return movieData[m];
             }
         }
-        return {likes:likesDefault, category:'Undetermined'};  //default for non-filtered
+        //default for non-filtered
+        return {likes:likesDefault, category:'Undetermined', audienceScore:50,
+                criticsScore:50, releaseDate: '1900-01-01' };
     }
 });
 
@@ -239,7 +265,7 @@ createVis = function() {
         .style("text-anchor", "end")
         .text(function(d) {return d;});
 
-    animateVis('January 27-February 2 2012');
+    animateVis(startAnimationWeek);
 }
 
 //returns index in MovieArry given weekDates
@@ -270,7 +296,6 @@ function movieWeekData (title, weekIndex) {
 
 function moveMovie() {
 
-    console.log('moveMovie');
     var movie = d3.select(this);
     var mData = movieNodeData (movie);
     var week = mData.week;
@@ -284,7 +309,6 @@ function moveMovie() {
 
             //gets movie data for animation to next week
             aData[0] = movieWeekData (mData.title, firstWeekIndex + aWeek);
-            console.log('aData[0]',aData[0]);
             if (aData[0] != null && aData[0].weeklyGross >= stopAnimationMinWeeklyGross ) {
                 var movieClass = 'm-movie'+ aWeek.toString();
                 movie
@@ -328,13 +352,16 @@ function copyMovieObj (movie) {
     url: movie.url,
     week: movie.week,
     weeklyGross: movie.weeklyGross,
-    year: movie.year}
+    year: movie.year,
+    audienceScore: movie.audienceScore,
+    criticsScore: movie.criticsScore,
+    releaseDate: movie.releaseDate
+   }
 }
 
 //adds movies to animation. appear on left at week 1
 function addMoviesToAnimation() {
 
-    console.log('addMoviesToAnimation');
     var filterWeekMovies = [];
     var cpZeroWeekMovies = [];
 
@@ -415,13 +442,18 @@ function addMoviesToAnimation() {
     wCounter++;
 }
 
+function stopAnimation () {
+    svg.transition().duration(0);
+}
+
 function animateVis (weekDates) {
 
+    stopAnimation();
     firstWeekIndex = weekIndex(weekDates);
 
     var w = 1;
     d3.timer(function() {
-        if (w <= animateWeeks) {
+        if (w <= animateWeeks && !animationInterrupt) {
            setTimeout(addMoviesToAnimation, (animateDuration/animateWeeks * w));
             w++;
             return false;
@@ -450,3 +482,16 @@ function abbreviateNumber(value) {
     }
     return newValue;
 }
+
+$(".moviesize").click(function() {
+        console.log('moviesizing');
+        $("li.moviesizing.active").removeClass("active");
+        $(this).closest('li').addClass('active');
+
+        // restart animation with different sizes
+        if (movieSizeOption != $(this).attr('id')) {
+             movieSizeOption = $(this).attr('id');
+            animateVis(startAnimationWeek);
+         }
+
+});

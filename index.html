@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title></title>
+    <title>Box Office Success</title>
+
     <script src="./libs/d3.v3.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+
     <style>
         h1 {
             font-size: 50px;
@@ -11,12 +15,19 @@
             letter-spacing: -2px;
             margin: .3em 0 .1em 0;
         }
+
+        .movieSizingBox {
+            margin-top: 60px;
+            border: 1px solid;
+            border-width: 1px;
+            border-color: #ddd;
+        }
+
+
         .axis path,
         .axis line {
             fill: none;
             stroke: lightgrey; }
-
-
 
         .axislabel  {
             font: 20px sans-serif;
@@ -43,8 +54,33 @@
 </head>
 <body>
 <h1> Box Office Success</h1>
-    <div id="mainVis"></div>
 
+
+    <div class="row">
+
+            <div class="col-md-9">
+                <div id="mainVis"></div>
+            </div>
+
+            <div class="col-md-1">
+                <div class="movieSizingBox">
+
+                <ul class="nav nav-pills .nav-stacked">
+                    <li class="moviesizing active"><a class="moviesize" href="#" id="theatres">Theatre Counts</a></li>
+                    <li class="moviesizing"><a class="moviesize" href="#" id="likes">Facebook likes</a></li>
+                    <li class="moviesizing"><a class="moviesize" href="#" id="audience">Rotten Tomatoes Audience Score</a></li>
+                    <li class="moviesizing"><a class="moviesize" href="#" id="critics">Rotten Tomatoes Critics Score</a></li>
+                </ul>
+
+                </div>
+
+            </div>
+
+        <script>
+
+
+
+        </script>
 
 	<script src = "boxoffice.js"></script>
 
