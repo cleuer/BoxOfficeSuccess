@@ -18,63 +18,70 @@
     var baseUrl = "http://api.rottentomatoes.com/api/public/v1.0";
 
     var moviesSearchUrl = baseUrl + '/movies.json?apikey=' + apikey;
-    var query = "Gone with the Wind";
     var csvLines  = [];
 
-    var headerLine = "weekDates,title,url,weeklyGross,theatreCount,totalGross,budget,week,year";
+    var headerLine = "title,likes,category,audienceScore,criticsScore,releaseDate";
     csvLines.push(headerLine);
 
     d3.csv("/data/boxoffice2012master.csv", function(movieData) {
         movieData.forEach( function (d, i) {
-            setTimeout(function(){  getMovieData(d); },1000);
+            setTimeout(function(){  getMovieData(d,i) },750*i);  // 3/4 second between calls, license limit of 1/5
         });
 
-    function getMovieData (movie) {
+        function getMovieData (movie, i) {
+            //console.log('getMovieData',i,movie.title);
 
+            $.ajax({
+                url: moviesSearchUrl + '&q=' + encodeURI(movie.title),
+                dataType: "jsonp",
+                success: function searchCallback(data) {
+                    $(document.body).append('Found ' + data.total + ' results <br>');
+                    console.log(data.movies[0]);
+                    addMovie(i,data.movies[0]);
 
-   /*     $.ajax({
-            url: moviesSearchUrl + '&q=' + encodeURI(movie.title),
-            dataType: "jsonp",
-            success: searchCallback,
-            error: function() {
-                return console.log("error");
+                },
+                error: function() {
+                    return console.log("error");
+                }
+            });
+        }
+
+        function addMovie (i, movie) {
+            var csvLine = '';
+            //title,likes,category,audienceScore,criticsScore,releaseDate
+            csvLine = movieData[i].title + ','+movieData[i].likes + ',' + movieData[i].category + ',' +
+                    movie.ratings.audience_score + ',' + movie.ratings.critics_score + ',' + movie.release_dates.theater;
+            csvLines.push(csvLine);
+
+            if (i >= (movieData.length - 1)) {
+                saveToFile(csvLines,"moviemaster.csv");
             }
-        });  */
-    }
 
-    // callback for when we get back the results
-    function searchCallback(data) {
-        $(document.body).append('Found ' + data.total + ' results for ' + query);
-        var movies = data.movies;
-        $.each(movies, function(index, movie) {
-            console.log(movie);
-            $(document.body).append('<h1>' + movie.title + '</h1>');
-            $(document.body).append('<img src="' + movie.posters.thumbnail + '" />');
-        });
-    }
 
-    /* takes an array of strings
-     and writes them line by line into a file given by filename
-     */
-    var saveToFile = function(arrayOfLines, fileName) {
-        /* adds linebreaks at the end*/
-        var blob, blobText;
-        blobText = arrayOfLines.map(function(d) {
-            if (d.endsWith("\n")) {
-                return d;
-            } else {
-                return d + "\n";
-            }
-        });
-        blob = new Blob(blobText, {
-            type: "text/plain;charset=utf-8"
-        });
-        return saveAs(blob, fileName);
-    };
+        }
 
-    String.prototype.endsWith = function(suffix) {
-        return this.indexOf(suffix, this.length - suffix.length) !== -1;
-    };
+        /* takes an array of strings
+         and writes them line by line into a file given by filename
+         */
+        var saveToFile = function(arrayOfLines, fileName) {
+            /* adds linebreaks at the end*/
+            var blob, blobText;
+            blobText = arrayOfLines.map(function(d) {
+                if (d.endsWith("\n")) {
+                    return d;
+                } else {
+                    return d + "\n";
+                }
+            });
+            blob = new Blob(blobText, {
+                type: "text/plain;charset=utf-8"
+            });
+            return saveAs(blob, fileName);
+        };
+
+        String.prototype.endsWith = function(suffix) {
+            return this.indexOf(suffix, this.length - suffix.length) !== -1;
+        };
 
     });
 
