@@ -73,8 +73,8 @@ var movieArr = [];   // each element represents 1 week of movie data. see progre
 // movies   - array of data for each movie in week
 //title, weeklyGross, week, theatreCount, budget, likes, category etc
 
-d3.csv("/data/boxoffice2012master.csv", function(movieData) {
-    d3.csv("/data/boxoffice2012combined.csv", function(boxOfficeData) {
+d3.csv("./data/boxoffice2012master.csv", function(movieData) {
+    d3.csv("./data/boxoffice2012combined.csv", function(boxOfficeData) {
 
         var movies = [];    // finalized array of movies in week including master attributes: likes, category etc.
         var movieWeekCnt = 0;
@@ -120,8 +120,7 @@ d3.csv("/data/boxoffice2012master.csv", function(movieData) {
                 weeklyGross: +d.weeklyGross,
                 year: d.year,
                 likes: summary.likes,
-                category: summary.category,
-                rank: +summary.rank
+                category: summary.category
             };
 
             if (movieWeekCnt <= maxMoviesPerWeek) {
@@ -149,7 +148,7 @@ d3.csv("/data/boxoffice2012master.csv", function(movieData) {
                 return movieData[m];
             }
         }
-        return {likes:likesDefault, category:'Undetermined', rank:100};  //default for non-filtered
+        return {likes:likesDefault, category:'Undetermined'};  //default for non-filtered
     }
 });
 
@@ -323,7 +322,6 @@ function copyMovieObj (movie) {
    return {
     category: movie.category,
     likes: movie.likes,
-    rank: movie.rank,
     theatreCount: movie.theatreCount,
     title: movie.title,
     totalGross: movie.totalGross,
