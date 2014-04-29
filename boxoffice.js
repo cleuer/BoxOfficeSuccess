@@ -9,9 +9,9 @@ var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
     wCounter,startAnimationWeek, currentAnimation, startMovieDelay;
 
 margin = {
-    top: 50,
+    top: 40,
     right: 50,
-    bottom: 50,
+    bottom: 10,
     left: 50
 };
 
@@ -27,14 +27,14 @@ bbVis = {
 
 
 barmargin = {
-    top: margin.top + margin.bottom + height + 100,
+    top: 10,
     right: 50,
-    bottom: 50,
+    bottom: 200,
     left: 50
 };
 
 barwidth = 1200 - barmargin.left - barmargin.right;
-barheight = 400 - barmargin.bottom - barmargin.top;
+barheight = 350 - barmargin.top - barmargin.bottom;
 
 circleSize = {
     maxRadius: 20,
@@ -74,8 +74,6 @@ barsvg = d3.select("#mainVis").append("svg").attr({
 }).append("g").attr({
         transform: "translate(" + barmargin.left + "," + barmargin.top + ")"
     });
-
-
 
 var color = d3.scale.category10();
 color.domain(['Action','Drama','Comedy','Family','Sci-fi','Horror','Undetermined']);  //colored by movie category
@@ -257,6 +255,64 @@ createVis = function() {
         .style("text-anchor", "end")
         .text(function(d) {return d;});
 
+    //bar chart
+    // citing http://bl.ocks.org/mbostock/3885304
+
+    var barXScale = d3.scale.ordinal()
+        .rangeRoundBands([0,bbVis.w], .1);
+
+    var barYScale = d3.scale.linear()
+        .range([barheight, 0]);
+
+    barvis = barsvg.append("g").attr({
+        "transform": "translate(" + bbVis.x + "," + (bbVis.y) + ")"
+    });
+
+    barXScale.domain(movieArr.map(function(d) { return d.weekDates; }));
+    barYScale.domain([0, d3.max(movieArr, function(d) { return d.weeklyGrossSum; })]);
+
+    var barXAxis = d3.svg.axis()
+        .scale(barXScale)
+        .orient("bottom");
+
+    var barYAxis = d3.svg.axis()
+        .scale(barYScale)
+        .orient("left");
+
+    barvis.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + barheight + ")")
+        .call(barXAxis)
+        .selectAll("text")
+        .classed("barxaxistick",true)
+        .attr("y", 0)
+        .attr("x", -10)
+        .attr("dy", "0em")
+        .attr("transform", "rotate(-90)")
+        .style("text-anchor", "end");
+
+    barvis.append("g")
+        .attr("class", "y axis")
+        .call(barYAxis)
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("All Movies Gross");
+
+    barvis.selectAll(".bar")
+        .data(movieArr)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("id", function (d,i){return i;})
+        .attr("x", function(d) { return barXScale(d.weekDates); })
+        .attr("width", barXScale.rangeBand())
+        .attr("y", function(d) { return barYScale(d.weeklyGrossSum); })
+        .attr("height", function(d) { return (barheight - barYScale(d.weeklyGrossSum)); })
+        .on("click", function(d) { chooseWeek($(this).attr('id')) })
+    ;
+
     animateVis(startAnimationWeek);
 }
 
@@ -350,6 +406,11 @@ function copyMovieObj (movie) {
    }
 }
 
+//changes X axis week label
+function changeWeekLabel (weekIndex) {
+    vis.select('.weeklabel').text(movieArr[weekIndex].weekDates);
+}
+
 //adds movies to animation. appear on left at week 1
 function addMoviesToAnimation(animation) {
 
@@ -357,6 +418,8 @@ function addMoviesToAnimation(animation) {
 
     var filterWeekMovies = [];
     var cpZeroWeekMovies = [];
+
+    changeWeekLabel (firstWeekIndex + wCounter) ;
 
     if (wCounter == 1) {
 
@@ -538,6 +601,7 @@ function abbreviateNumber(value) {
     return newValue;
 }
 
+// allow user to choose movie sizing option to change radius of circles. force a re-animation
 $(".moviesize").click(function() {
         $("li.moviesizing.active").removeClass("active");
         $(this).closest('li').addClass('active');
@@ -551,6 +615,10 @@ $(".moviesize").click(function() {
 });
 
 
-
-
+function chooseWeek (weekIndex) {
+    console.log('chooseWeek=',weekIndex);
+    $("rect.bar.active").removeClass("active");
+    $("#0").addClass('active');
+    animateVis(movieArr[+weekIndex].weekDates);
+}
 
