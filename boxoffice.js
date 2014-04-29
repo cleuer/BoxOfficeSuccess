@@ -16,9 +16,8 @@ margin = {
 };
 
 width = 1200 - margin.left - margin.right;
-
 height = 600 - margin.bottom - margin.top;
-1
+
 bbVis = {
     x: 100,
     y: 10,
@@ -27,12 +26,15 @@ bbVis = {
 };
 
 
-bbOverview = {
-    x: 0,
-    y: 10,
-    w: width,
-    h: 50
+barmargin = {
+    top: margin.top + margin.bottom + height + 100,
+    right: 50,
+    bottom: 50,
+    left: 50
 };
+
+barwidth = 1200 - barmargin.left - barmargin.right;
+barheight = 400 - barmargin.bottom - barmargin.top;
 
 circleSize = {
     maxRadius: 20,
@@ -66,23 +68,13 @@ svg = d3.select("#mainVis").append("svg").attr({
         transform: "translate(" + margin.left + "," + margin.top + ")"
     });
 
-controlsvg = d3.select("#controlVis").append("svg").attr({
-    width: 400,
-    height: 400
+barsvg = d3.select("#mainVis").append("svg").attr({
+    width: barwidth + barmargin.left + barmargin.right,
+    height: barheight + barmargin.top + barmargin.bottom
 }).append("g").attr({
-        transform: "translate(" +  (1400) + "," + 0 + ")"
+        transform: "translate(" + barmargin.left + "," + barmargin.top + ")"
     });
 
-controlvis = controlsvg.append("g").attr({
-    "transform": "translate(" + 30 + "," + 30 + ")"
-});
-
-controlvis.append("text")
-    .attr("class", "weeklabel")
-    .attr("text-anchor", "start")
-    .attr("x", 0)
-    .attr("y", 0)
-    .text("123");
 
 
 var color = d3.scale.category10();
@@ -557,3 +549,8 @@ $(".moviesize").click(function() {
          }
 
 });
+
+
+
+
+
