@@ -35,7 +35,7 @@ bbOverview = {
 };
 
 circleSize = {
-    maxRadius: 30,
+    maxRadius: 20,
     maxLikes: 20000000,    //20m likes
     labelMoveRight: 5,
     labelMoveDown: -20
@@ -55,9 +55,10 @@ startAnimationWeek ='January 27-February 2 2012';  //default week to start anima
 startMovieDelay = 300;  //milliseconds before the movie starts moving
 
 //globals, do not change
-movieSizeOption = 'theatre';  //sized by theatre by default. options are theatres,likes,audience,critics
+movieSizeOption = 'theatres';  //sized by theatres by default. options are theatres,likes,audience,critics
 currentAnimation = 0;  // a unique animation number is incremented each time the animation is restarted by user
 
+//draw canvas item
 svg = d3.select("#mainVis").append("svg").attr({
     width: width + margin.left + margin.right,
     height: height + margin.top + margin.bottom
@@ -85,7 +86,9 @@ controlvis.append("text")
 
 
 var color = d3.scale.category10();
-color.domain(['Action','Drama','Comedy','Family','Sci-fi','Horror','Undetermined']);  //circles are colored by movie category
+color.domain(['Action','Drama','Comedy','Family','Sci-fi','Horror','Undetermined']);  //colored by movie category
+
+var masterMovieData;
 
 var movieArr = [];   // each element represents 1 week of movie data. see progress book
 // weekDates - string for week, ex:January 4-10 2013
@@ -94,6 +97,8 @@ var movieArr = [];   // each element represents 1 week of movie data. see progre
 //title, weeklyGross, week, theatreCount, budget, likes, category etc
 
 d3.csv("./data/moviemaster.csv", function(movieData) {
+
+    masterMovieData = movieData;
     d3.csv("./data/boxoffice2012combined.csv", function(boxOfficeData) {
 
         var movies = [];    // finalized array of movies in week including master attributes: likes, category etc.
@@ -195,10 +200,6 @@ createVis = function() {
 
     xAxis = d3.svg.axis().scale(xScale).orient("bottom");
 
-    rScale = d3.scale.linear()
-        .domain([0,circleSize.maxLikes])
-        .range([0, circleSize.maxRadius]);
-
     stopAnimatioinOffsetScale = d3.scale.linear()//fix: find better way to distribute
         .domain([0,maxTotalGrossFilter])
         .range([0,1]);    //used to distribute final location according to gross so they are not stacked
@@ -284,7 +285,6 @@ function movieNodeData (movieNode) {
 function movieWeekData (title, weekIndex) {
     if (weekIndex < movieArr.length) {  //index must be in bounds
         for (var m = 0; m < movieArr[weekIndex].movies.length; m++) {
-            //console.log(movieArr[weekIndex].movies[m].title, title);
             if (movieArr[weekIndex].movies[m].title == title) {
                 return movieArr[weekIndex].movies[m];
             }
@@ -361,8 +361,6 @@ function copyMovieObj (movie) {
 //adds movies to animation. appear on left at week 1
 function addMoviesToAnimation(animation) {
 
-    console.log('addMoviesToAnimation',animation, currentAnimation,wCounter);
-
     if (currentAnimation == animation) {   //prevents older timed animations from running
 
     var filterWeekMovies = [];
@@ -398,8 +396,6 @@ function addMoviesToAnimation(animation) {
 
     var animateWeekMovies = filterWeekMovies.concat(cpZeroWeekMovies);
 
-    console.log('animateWeekMovies',animateWeekMovies)
-
     var groupClass = 'moviegroup'+ wCounter.toString();
     var movieGroups = vis.selectAll('.'+groupClass)
         .data(animateWeekMovies)
@@ -423,7 +419,7 @@ function addMoviesToAnimation(animation) {
         .attr("fill", function(d) { return color(d.category); })
         .attr("cx", function(d) { return xScale(d.week);})
         .attr("cy", function(d) { return yScale(d.weeklyGross); })
-        .attr("r", function(d) { return rScale(d.likes); });
+        .attr("r", function(d) { return movieSize(d); });
 
     movies
         .transition()
@@ -450,7 +446,6 @@ function addMoviesToAnimation(animation) {
 }
 
 function removeMovieGroups () {
-    console.log('removeMovieGroups');
     var movieGroups = vis.selectAll('.moviegroup');
     movieGroups.remove();
 }
@@ -473,6 +468,64 @@ function animateVis (weekDates) {
 
 };
 
+function getMovieScale () {
+    var mScale = d3.scale.linear();
+
+    if (movieSizeOption == 'theatres') {
+
+        mScale
+            .domain([0,d3.max(movieArr,
+                function (d) {
+                    return d3.max(d.movies, function (movie) {
+                        return movie.theatreCount;
+                    })
+                })
+            ])
+            .range([0, circleSize.maxRadius]);
+
+    } else if (movieSizeOption == 'likes') {
+
+        mScale
+            .domain([0,d3.max(masterMovieData,
+              function (d) {
+                  return d.likes
+              })
+            ])
+            .range([0, circleSize.maxRadius]);
+
+    }  else if (movieSizeOption == 'audience' || movieSizeOption =='critics' ) {
+
+        mScale
+            .domain([0,100])   //0-100 score from Rotten Tomatoes
+            .range([0, circleSize.maxRadius]);
+    }
+    return mScale;
+}
+
+function movieSize (movie) {
+
+    var mScale = getMovieScale();
+
+    var maxTheatreCount = d3.max(movieArr,
+        function (d) {
+            return d3.max(d.movies, function (movie) {
+                return movie.theatreCount;
+            })
+        });
+
+   // if (movie.title == 'The Hunger Games') {
+   //    console.log(movie.title,movie.audienceScore,mScale(movie.audienceScore));
+   // }
+    var R;
+    if (movieSizeOption == 'theatres')  {R = mScale(movie.theatreCount); }
+    else if (movieSizeOption == 'likes') {R = mScale(movie.likes); }
+    else if (movieSizeOption == 'audience') {R = mScale(movie.audienceScore); }
+    else if (movieSizeOption == 'critics') {R = mScale(movie.criticsScore); }
+
+    return R;
+}
+
+
 // Citing Phillip Lenssen
 // http://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn
 //
@@ -494,7 +547,6 @@ function abbreviateNumber(value) {
 }
 
 $(".moviesize").click(function() {
-        console.log('moviesizing');
         $("li.moviesizing.active").removeClass("active");
         $(this).closest('li').addClass('active');
 
