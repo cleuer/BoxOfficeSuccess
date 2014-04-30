@@ -49,10 +49,10 @@ maxMoviesPerWeek = 50;  //maximum movies to animate
 likesDefault = 5000000;
 animateWeeks = 12;  // 3 months to animate movies
 animateDuration = 20000;  //milliseconds for complete animation
-minTotalGrossFilter = 25000000; //total gross minimum in order be displayed
+minTotalGrossFilter = 20000000; //total gross minimum in order be displayed
 maxTotalGrossFilter = 1000000000;
 stopAnimationMinWeeklyGross = 100000;  //once weekly gross drops to minimum, stop animation and display movie
-minWeeklyGrossFilter = 3000000; // Minimum weekly gross for first week of animation in order to be displayed
+minWeeklyGrossFilter = 2000000; // Minimum weekly gross for first week of animation in order to be displayed
 startAnimationWeek ='January 27-February 2 2012';  //default week to start animation
 startMovieDelay = 300;  //milliseconds before the movie starts moving
 
@@ -76,7 +76,7 @@ barsvg = d3.select("#mainVis").append("svg").attr({
     });
 
 var color = d3.scale.category10();
-color.domain(['Action','Drama','Comedy','Family','Sci-fi','Horror','Undetermined']);  //colored by movie category
+color.domain(['Action','Drama','Comedy','Family','Sci-fi','Horror','Documentary','Undetermined']);
 
 var masterMovieData;
 
@@ -340,6 +340,52 @@ function movieWeekData (title, weekIndex) {
     }
     return null;
 }
+function moveMovieLabel() {
+    console.log('moveMovieLabel');
+    var movieLabel = d3.select(this);
+    var mData = movieNodeData (movieLabel);
+    var week = mData.week;
+    var aWeek = wCounter;
+    var aData = [];  //new data to bind after every animation
+
+    //if (mData.title == 'Red Tails') {
+
+    (function move() {
+        if (aWeek <= (animateWeeks)) {
+
+            //gets movie data for animation to next week
+            aData[0] = movieWeekData (mData.title, firstWeekIndex + aWeek);
+            if (aData[0] != null && aData[0].weeklyGross >= stopAnimationMinWeeklyGross ) {
+                var movieClass = 'm-movielabel'+ aWeek.toString();
+                movieLabel
+                    .data(aData)
+                    .transition()
+                    .duration(animateDuration/animateWeeks)
+                    .ease('linear')
+                    .attr("x", function(d) {return xScale(week + 1);})
+                    .attr("y", function(d) { return yScale(d.weeklyGross); })
+                    .each("end", move);
+
+                week++;
+            } else {
+                //tuning>: offset the movies at their final stopping point
+                movieLabel
+                    .transition()
+                    .duration(animateDuration/animateWeeks)
+                    .ease('linear')
+                    .attr("x", function(d) {return xScale(week + stopAnimatioinOffsetScale(d.totalGross)); });
+            }
+
+        } else {
+            if (week == aWeek) {
+                movieLabel.remove();  //remove if it gets to the end od animation weeks
+            }
+        }
+        aWeek++;
+    })();
+
+    // }
+}
 
 function moveMovie() {
 
@@ -366,6 +412,7 @@ function moveMovie() {
                     .attr("cx", function(d) {return xScale(week + 1);})
                     .attr("cy", function(d) { return yScale(d.weeklyGross); })
                     .attr("class",  function (d) {return movieClass+' '+ d.title})
+                    .attr("r", function(d) { return movieSize(d); })
                     .each("end", move);
 
                 week++;
@@ -387,23 +434,6 @@ function moveMovie() {
     })();
 
   // }
-}
-
-function copyMovieObj (movie) {
-   return {
-    category: movie.category,
-    likes: movie.likes,
-    theatreCount: movie.theatreCount,
-    title: movie.title,
-    totalGross: movie.totalGross,
-    url: movie.url,
-    week: movie.week,
-    weeklyGross: movie.weeklyGross,
-    year: movie.year,
-    audienceScore: movie.audienceScore,
-    criticsScore: movie.criticsScore,
-    releaseDate: movie.releaseDate
-   }
 }
 
 //changes X axis week label
@@ -482,8 +512,7 @@ function addMoviesToAnimation(animation) {
         .delay(startMovieDelay)
         .each (moveMovie);
 
-    /*
-     var movielabels = movieGroups
+     var movieLabels = movieGroups
      .append("text")
      .classed("movielabel",true)
      .attr("x", function(d) { return xScale(d.week);})
@@ -491,13 +520,16 @@ function addMoviesToAnimation(animation) {
      .attr("dx", function(d) { return circleSize.labelMoveRight ;})
      .attr("dy",  function(d) { return circleSize.labelMoveDown;})
      .attr("text-anchor","middle")
-     .text(function(d) {return (d.title + ", Likes "+ abbreviateNumber(d.likes) ); });
-     */
+     .text(function(d) {return d.title; });
 
-    wCounter++;
+     movieLabels
+            .transition()
+            .duration(animateDuration)
+            .delay(startMovieDelay)
+            .each (moveMovieLabel);
 
+        wCounter++;
     }
-
 }
 
 function removeMovieGroups () {
@@ -560,17 +592,6 @@ function getMovieScale () {
 function movieSize (movie) {
 
     var mScale = getMovieScale();
-
-    var maxTheatreCount = d3.max(movieArr,
-        function (d) {
-            return d3.max(d.movies, function (movie) {
-                return movie.theatreCount;
-            })
-        });
-
-   // if (movie.title == 'The Hunger Games') {
-   //    console.log(movie.title,movie.audienceScore,mScale(movie.audienceScore));
-   // }
     var R;
     if (movieSizeOption == 'theatres')  {R = mScale(movie.theatreCount); }
     else if (movieSizeOption == 'likes') {R = mScale(movie.likes); }
@@ -579,7 +600,6 @@ function movieSize (movie) {
 
     return R;
 }
-
 
 // Citing Phillip Lenssen
 // http://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn
@@ -614,11 +634,28 @@ $(".moviesize").click(function() {
 
 });
 
-
 function chooseWeek (weekIndex) {
-    console.log('chooseWeek=',weekIndex);
+
     $("rect.bar.active").removeClass("active");
-    $("#0").addClass('active');
+    var id = $(this).attr('id');
+    $("#"+id).addClass('active');
     animateVis(movieArr[+weekIndex].weekDates);
+}
+
+function copyMovieObj (movie) {
+    return {
+        category: movie.category,
+        likes: movie.likes,
+        theatreCount: movie.theatreCount,
+        title: movie.title,
+        totalGross: movie.totalGross,
+        url: movie.url,
+        week: movie.week,
+        weeklyGross: movie.weeklyGross,
+        year: movie.year,
+        audienceScore: movie.audienceScore,
+        criticsScore: movie.criticsScore,
+        releaseDate: movie.releaseDate
+    }
 }
 
