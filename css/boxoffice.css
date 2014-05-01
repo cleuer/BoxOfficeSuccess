@@ -1,0 +1,91 @@
+/* Box Office Visualization style sheet, Chris Leuer, April 30, 2014 */
+
+h1 {
+    font-size: 50px;
+    font-weight: 300;
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    letter-spacing: -2px;
+    margin: .3em 0 .1em 0;
+}
+
+
+.bar {
+    fill: steelblue;
+}
+
+.bar:hover {
+    fill: #d412a9;
+}
+
+rect.active {
+    fill: #970f65;
+}
+
+
+.movieSizingBox {
+    margin-top: 60px;
+    border: 1px solid;
+    border-width: 1px;
+    border-color: #ddd;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: lightgrey; }
+
+.barxaxistick  {
+    font: 10px tahoma;
+    font-weight: 700;
+    fill: grey;
+}
+
+.axislabel  {
+    font: 20px sans-serif;
+    font-weight: 600;
+}
+
+.movielabel  {
+    font: 10px sans-serif;
+    font-weight: 800;
+}
+
+.legendlabel  {
+    font: 14px sans-serif;
+    font-weight: 500;
+}
+
+.weeklabel {
+    font: 20px sans-serif;
+    font-weight: 600;
+    color: darkslateblue;
+}
+
+.d3-tip {
+    line-height: 1;
+    font-weight: bold;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 2px;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+    box-sizing: border-box;
+    display: inline;
+    font-size: 10px;
+    width: 100%;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.8);
+    content: "\25BC";
+    position: absolute;
+    text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+    margin: -1px 0 0 0;
+    top: 100%;
+    left: 0;
+}

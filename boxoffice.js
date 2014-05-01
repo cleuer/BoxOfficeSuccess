@@ -486,19 +486,13 @@ function addMoviesToAnimation(animation) {
         .append("g")
         .classed("moviegroup",true);
 
-    /*
-    movieGroups
-        .append("text")
-        .attr("x", function(d) { return xScale(d.week -1);})
-        .attr("y", function(d) { return yScale(0); })
-        .text(function(d) { return d.title; });
-*/
-    var movieClass = 'movie'+wCounter.toString();
+   var movieClass = 'movie';
+//    var movieClass = 'movie'+wCounter.toString();
     var movies = movieGroups
         .append("circle")
         .attr("stroke", "blue")
-//        .classed(movieClass,true)
-        .attr("class",  function (d) {return movieClass+' '+ d.title})
+        .classed(movieClass,true)
+//        .attr("class",  function (d) {return movieClass+' '+ d.title})
         .attr("fill", function(d) { return color(d.category); })
         .attr("cx", function(d) { return xScale(d.week);})
         .attr("cy", function(d) { return yScale(d.weeklyGross); })
