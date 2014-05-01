@@ -5,101 +5,44 @@
 
     <script src="./libs/d3.v3.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-
-    <style>
-        h1 {
-            font-size: 50px;
-            font-weight: 300;
-            font-family: "Helvetica Neue", Helvetica, sans-serif;
-            letter-spacing: -2px;
-            margin: .3em 0 .1em 0;
-        }
-
-
-        .bar {
-            fill: steelblue;
-        }
-
-        .bar:hover {
-            fill: #d412a9;
-        }
-
-        rect.active {
-            fill: #970f65;
-        }
-
-
-        .movieSizingBox {
-            margin-top: 60px;
-            border: 1px solid;
-            border-width: 1px;
-            border-color: #ddd;
-        }
-
-        .axis path,
-        .axis line {
-            fill: none;
-            stroke: lightgrey; }
-
-        .barxaxistick  {
-            font: 10px tahoma;
-            font-weight: 700;
-            fill: grey;
-        }
-
-        .axislabel  {
-            font: 20px sans-serif;
-            font-weight: 600;
-        }
-
-        .movielabel  {
-            font: 10px sans-serif;
-            font-weight: 800;
-        }
-
-        .legendlabel  {
-            font: 14px sans-serif;
-            font-weight: 500;
-        }
-
-        .weeklabel {
-            font: 20px sans-serif;
-            font-weight: 600;
-            color: darkslateblue;
-        }
-    </style>
+    <link rel="stylesheet" href="./css/boxoffice.css">
 
 </head>
 <body>
-<h1> Box Office Success</h1>
 
 
-    <div class="row">
+<div class="row">
+        <div class="col-md-4">
+            <h1> Box Office Success</h1>
+        </div>
+        <div class="col-md-6 highlight">
+            <strong>Explore box office success of movies in 2012</strong>
+            <p> This visualization animates box office results over a twelve week window.  Each circle represents a movie
+                sized by either theatre counts, Facebook Likes, Rotten Tomatoes Audience or Critics Score.  To start an
+                animation, select a week in the bar chart. The average movie is show in theatres for four weeks. Most
+                revenue results in the first week, but a successful movie can stay in theatres more than three months.
+            </p>
+        </div>
+</div>
 
-            <div class="col-md-9">
-                <div id="mainVis"></div>
-            </div>
+<div class="row">
+    <div class="col-md-9">
+        <div id="mainVis"></div>
+    </div>
 
-            <div class="col-md-1">
-                <div class="movieSizingBox">
+     <div class="col-md-1">
+         <div class="movieSizingBox">
 
-                <ul class="nav nav-pills .nav-stacked">
+         <ul class="nav nav-pills .nav-stacked">
                     <li class="moviesizing active"><a class="moviesize" href="#" id="theatres">Theatre Counts</a></li>
                     <li class="moviesizing"><a class="moviesize" href="#" id="likes">Facebook likes</a></li>
                     <li class="moviesizing"><a class="moviesize" href="#" id="audience">Rotten Tomatoes Audience Score</a></li>
                     <li class="moviesizing"><a class="moviesize" href="#" id="critics">Rotten Tomatoes Critics Score</a></li>
-                </ul>
-
-                </div>
-
-            </div>
-
-        <script>
-
-
-
-        </script>
+         </ul>
+      </div>
+</div>
 
 	<script src = "boxoffice.js"></script>
 
