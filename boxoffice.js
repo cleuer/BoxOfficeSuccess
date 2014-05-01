@@ -1,12 +1,12 @@
 /**
  * Chris Leuer
- * Box Office Success
+ * Box Office Success Visualization
  * April 2014
  */
 var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
     circleSize, maxWeeklyGross, maxMoviesPerWeek, vis, xScale, yScale, yAxis, xAxis, rScale, animateDuration,
     firstWeekIndex, minTotalGrossFilter, stopAnimationMinWeeklyGross, minWeeklyGrossFilter, maxTotalGrossFilter,
-    wCounter,startAnimationWeek, currentAnimation, startMovieDelay, barXScale, barYScale;
+    wCounter,startAnimationWeek, currentAnimation, startMovieDelay, barXScale, barYScale, moveAlive;
 
 margin = {
     top: 40,
@@ -59,6 +59,7 @@ startMovieDelay = 300;  //milliseconds before the movie starts moving
 //globals, do not change
 movieSizeOption = 'theatres';  //sized by theatres by default. options are theatres,likes,audience,critics
 currentAnimation = 0;  // a unique animation number is incremented each time the animation is restarted by user
+moveAlive = true;   // signals circle animation is alive and not stopped
 
 //draw canvas item
 svg = d3.select("#mainVis").append("svg").attr({
@@ -156,9 +157,7 @@ d3.csv("./data/moviemaster.csv", function(movieData) {
          */
 
         console.log('movieArr',movieArr);
-
         return createVis();
-
     });
 
     function getSummary (title) {
@@ -317,6 +316,119 @@ createVis = function() {
     animateVis(startAnimationWeek);
 }
 
+//animation main
+function animateVis (weekDates) {
+
+    removeMovieGroups();
+    currentAnimation++;  //allows timed addMoviesAnimation to know if it's animating a stopped animation
+    wCounter = 1;   //week animation counter, restarts at 1 for every animation
+    firstWeekIndex = weekIndex(weekDates) - 1;  //-1 trick get week 1 data to show at 0 X position
+    console.log('firstWeekIndex',firstWeekIndex);
+
+    changeWeekLabel(weekIndex(weekDates));
+
+    var w = 1;
+    d3.timer(function() {
+        if (w <= animateWeeks) {
+            setTimeout(addMoviesToAnimation, (animateDuration/animateWeeks * w),currentAnimation);
+            w++;
+            return false;
+        } else return true;
+    });
+
+}
+
+//adds movies to animation and starts move
+function addMoviesToAnimation(animation) {
+
+    if (currentAnimation == animation) {   //prevents older timed animations from running
+
+        moveAlive = true;
+        var filterWeekMovies = [];
+        var cpZeroWeekMovies = [];
+
+        changeWeekLabel (firstWeekIndex + wCounter) ;
+
+        if (wCounter == 1) {
+
+            //tuning: also, filter movies by minimum weekly gross
+            filterWeekMovies =movieArr[firstWeekIndex].movies.filter (  function (d) {
+                if (d.weeklyGross >= minWeeklyGrossFilter  ) {
+                    return true;  // return all movies at min weekly gross
+                }  else {return false;}
+            });
+        }
+
+        //populate week 1 from next movieArr, these will start animation at position zero
+        var weekIndex = firstWeekIndex + wCounter; //next index in movieArr
+        if (weekIndex < movieArr.length) {
+            var zeroWeekMovies =movieArr[weekIndex].movies.filter (  function (d) {
+                if (d.weeklyGross >= minWeeklyGrossFilter && d.week == 1  ) {
+                    return true;  // return all movies at min weekly gross
+                }  else {return false;}
+            });
+
+            // copy zeroWeekMovies array to new one with zeros for week and weeklyGross
+            zeroWeekMovies.forEach ( function (d) {
+                var zeroMovie = copyMovieObj(d);
+                zeroMovie.week=0;
+                zeroMovie.weeklyGross=0;
+                cpZeroWeekMovies.push(zeroMovie);
+            });
+        }
+
+        console.log(weekIndex,cpZeroWeekMovies);
+
+        var animateWeekMovies = filterWeekMovies.concat(cpZeroWeekMovies);
+
+        var groupClass = 'moviegroup'+ wCounter.toString();
+        var movieGroups = vis.selectAll('.'+groupClass)
+            .data(animateWeekMovies)
+            .enter()
+            .append("g")
+            .classed("moviegroup",true);
+
+        var movieClass = 'movie';
+//    var movieClass = 'movie'+wCounter.toString();
+        var movies = movieGroups
+            .append("circle")
+            .attr("stroke", "blue")
+            .classed(movieClass,true)
+//        .attr("class",  function (d) {return movieClass+' '+ d.title})
+            .attr("fill", function(d) { return color(d.category); })
+            .attr("cx", function(d) { return xScale(d.week);})
+            .attr("cy", function(d) { return yScale(d.weeklyGross); })
+            .attr("r", function(d) { return movieSize(d); })
+            .on("click", function(d,i) { freezeAnimation(); });
+
+        movies
+            .transition()
+            .duration(animateDuration)
+            .delay(startMovieDelay)
+            .each (moveMovie);
+
+        var movieLabels = movieGroups
+            .append("text")
+            .classed("movielabel",true)
+            .attr("x", function(d) { return xScale(d.week);})
+            .attr("y", function(d) { return yScale(d.weeklyGross);})
+            .attr("dx", function(d) { return circleSize.labelMoveRight ;})
+            .attr("dy",  function(d) { return circleSize.labelMoveDown;})
+            .attr("text-anchor","middle")
+            .text(function(d) {return d.title; });
+
+        movieLabels
+            .transition()
+            .duration(animateDuration)
+            .delay(startMovieDelay)
+            .each (moveMovieLabel);
+
+        wCounter++;
+    } else {
+        moveAlive = false;
+    }
+}
+
 //returns index in MovieArry given weekDates
 function weekIndex(weekDates) {
     for(var i=0; i< movieArr.length; i++) {
@@ -351,12 +463,12 @@ function moveMovie() {
     var aData = [];  //new data to bind after every animation
 
     (function move() {
-        if (aWeek <= (animateWeeks)) {
+        if (aWeek <= (animateWeeks) && moveAlive) {
 
             //gets movie data for animation to next week
             aData[0] = movieWeekData (mData.title, firstWeekIndex + aWeek);
             if (aData[0] != null && aData[0].weeklyGross >= stopAnimationMinWeeklyGross ) {
-                var movieClass = 'm-movie'+ aWeek.toString();
+                var movieClass = 'm-movie'+ aWeek.toString() + ' movie';
                 movie
                     .data(aData)
                     .transition()
@@ -364,7 +476,7 @@ function moveMovie() {
                     .ease('linear')
                     .attr("cx", function(d) {return xScale(week + 1);})
                     .attr("cy", function(d) { return yScale(d.weeklyGross); })
-                    .attr("class",  function (d) {return movieClass+' '+ d.title})
+                    .attr("class",  function (d) {return movieClass})
                     .attr("r", function(d) { return movieSize(d); })
                     .each("end", move);
 
@@ -396,7 +508,7 @@ function moveMovieLabel() {
     var aData = [];  //new data to bind after every animation
 
     (function move() {
-        if (aWeek <= (animateWeeks)) {
+        if (aWeek <= (animateWeeks) && moveAlive) {
 
             //gets movie data for animation to next week
             aData[0] = movieWeekData (mData.title, firstWeekIndex + aWeek);
@@ -437,118 +549,10 @@ function changeWeekLabel (weekIndex) {
     }
 }
 
-//adds movies to animation. appear on left at week 1
-function addMoviesToAnimation(animation) {
-
-    if (currentAnimation == animation) {   //prevents older timed animations from running
-
-    var filterWeekMovies = [];
-    var cpZeroWeekMovies = [];
-
-    changeWeekLabel (firstWeekIndex + wCounter) ;
-
-    if (wCounter == 1) {
-
-    //tuning: also, filter movies by minimum weekly gross
-    filterWeekMovies =movieArr[firstWeekIndex].movies.filter (  function (d) {
-        if (d.weeklyGross >= minWeeklyGrossFilter  ) {
-              return true;  // return all movies at min weekly gross
-        }  else {return false;}
-    });
-    }
-
-    //populate week 1 from next movieArr, these will start animation at position zero
-    var weekIndex = firstWeekIndex + wCounter; //next index in movieArr
-    if (weekIndex < movieArr.length) {
-            var zeroWeekMovies =movieArr[weekIndex].movies.filter (  function (d) {
-                if (d.weeklyGross >= minWeeklyGrossFilter && d.week == 1  ) {
-                    return true;  // return all movies at min weekly gross
-                }  else {return false;}
-            });
-
-            // copy zeroWeekMovies array to new one with zeros for week and weeklyGross
-            zeroWeekMovies.forEach ( function (d) {
-                var zeroMovie = copyMovieObj(d);
-                zeroMovie.week=0;
-                zeroMovie.weeklyGross=0;
-                cpZeroWeekMovies.push(zeroMovie);
-            });
-    }
-
-    console.log(weekIndex,cpZeroWeekMovies);
-
-        var animateWeekMovies = filterWeekMovies.concat(cpZeroWeekMovies);
-
-    var groupClass = 'moviegroup'+ wCounter.toString();
-    var movieGroups = vis.selectAll('.'+groupClass)
-        .data(animateWeekMovies)
-        .enter()
-        .append("g")
-        .classed("moviegroup",true);
-
-   var movieClass = 'movie';
-//    var movieClass = 'movie'+wCounter.toString();
-    var movies = movieGroups
-        .append("circle")
-        .attr("stroke", "blue")
-        .classed(movieClass,true)
-//        .attr("class",  function (d) {return movieClass+' '+ d.title})
-        .attr("fill", function(d) { return color(d.category); })
-        .attr("cx", function(d) { return xScale(d.week);})
-        .attr("cy", function(d) { return yScale(d.weeklyGross); })
-        .attr("r", function(d) { return movieSize(d); });
-
-    movies
-        .transition()
-        .duration(animateDuration)
-        .delay(startMovieDelay)
-        .each (moveMovie);
-
-     var movieLabels = movieGroups
-     .append("text")
-     .classed("movielabel",true)
-     .attr("x", function(d) { return xScale(d.week);})
-     .attr("y", function(d) { return yScale(d.weeklyGross);})
-     .attr("dx", function(d) { return circleSize.labelMoveRight ;})
-     .attr("dy",  function(d) { return circleSize.labelMoveDown;})
-     .attr("text-anchor","middle")
-     .text(function(d) {return d.title; });
-
-     movieLabels
-            .transition()
-            .duration(animateDuration)
-            .delay(startMovieDelay)
-            .each (moveMovieLabel);
-
-        wCounter++;
-    }
-}
-
 function removeMovieGroups () {
     var movieGroups = vis.selectAll('.moviegroup');
     movieGroups.remove();
 }
-
-function animateVis (weekDates) {
-
-    removeMovieGroups();
-    currentAnimation++;  //allows timed addMoviesAnimation to know if it's animating a stopped animation
-    wCounter = 1;   //week animation counter, restarts at 1 for every animation
-    firstWeekIndex = weekIndex(weekDates) - 1;  //-1 trick get week 1 data to show at 0 X position
-    console.log('firstWeekIndex',firstWeekIndex);
-
-    changeWeekLabel(weekIndex(weekDates));
-
-    var w = 1;
-    d3.timer(function() {
-        if (w <= animateWeeks) {
-           setTimeout(addMoviesToAnimation, (animateDuration/animateWeeks * w),currentAnimation);
-            w++;
-            return false;
-        } else return true;
-    });
-
-};
 
 function getMovieScale () {
 
@@ -617,19 +621,6 @@ function abbreviateNumber(value) {
     return newValue;
 }
 
-// allow user to choose movie sizing option to change radius of circles. force a re-animation
-$(".moviesize").click(function() {
-        $("li.moviesizing.active").removeClass("active");
-        $(this).closest('li').addClass('active');
-
-        // restart animation with different sizes
-        if (movieSizeOption != $(this).attr('id')) {
-             movieSizeOption = $(this).attr('id');
-            animateVis(movieArr[firstWeekIndex].weekDates);
-         }
-
-});
-
 function chooseWeek (weekIndex) {
 
     $("rect.bar.active").removeClass("active");
@@ -655,3 +646,22 @@ function copyMovieObj (movie) {
     }
 }
 
+function freezeAnimation () {
+    console.log('freezeAnimation');
+    currentAnimation++;
+}
+
+//event binding
+
+// allow user to choose movie sizing option to change radius of circles. force a re-animation
+$(".moviesize").click(function() {
+    $("li.moviesizing.active").removeClass("active");
+    $(this).closest('li').addClass('active');
+
+    // restart animation with different sizes
+    if (movieSizeOption != $(this).attr('id')) {
+        movieSizeOption = $(this).attr('id');
+        animateVis(movieArr[firstWeekIndex].weekDates);
+    }
+
+});
