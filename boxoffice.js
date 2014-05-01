@@ -58,7 +58,7 @@ startAnimationWeek ='January 6-12 2012';  //default week to start animation
 startMovieDelay = 200;  //milliseconds before the movie starts moving
 
 //globals, do not change
-movieSizeOption = 'theatres';  //sized by theatres by default. options are theatres,likes,audience,critics
+movieSizeOption = 'theatres';  //sized by theatres by default. options are theatres,likes,audience,critics,budget
 currentAnimation = 0;  // a unique animation number is incremented each time the animation is restarted by user
 moveAlive = true;   // signals circle animation is alive and not stopped
 
@@ -92,6 +92,8 @@ d3.csv("./data/moviemaster.csv", function(movieData) {
 
     masterMovieData = movieData;
     d3.csv("./data/boxoffice2012combined.csv", function(boxOfficeData) {
+
+        console.log('boxOfficeData',boxOfficeData);
 
         var movies = [];    // finalized array of movies in week including master attributes: likes, category etc.
         var movieWeekCnt = 0;
@@ -136,6 +138,7 @@ d3.csv("./data/moviemaster.csv", function(movieData) {
                 weekDates: d.weekDates,
                 weeklyGross: +d.weeklyGross,
                 year: d.year,
+                budget: d.budget,
                 likes: +summary.likes,
                 category: summary.category,
                 audienceScore: +summary.audienceScore,
@@ -153,10 +156,10 @@ d3.csv("./data/moviemaster.csv", function(movieData) {
          // weekDates - string for week, ex:January 4-10 2013
          // weeklyGrossSum  - sum of weekly gross for movies
          // movies   - array of data for each movie in week
-         //title, weeklyGross, week, theatreCount,  likes, category, audienceScore, criticsScore, releaseDate
+         //title, weeklyGross, week, theatreCount, budget, likes, category, audienceScore, criticsScore, releaseDate
          */
 
-       // console.log('movieArr',movieArr);
+        console.log('movieArr',movieArr);
         return createVis();
     });
 
@@ -430,7 +433,8 @@ function addMoviesToAnimation(animation) {
         wCounter++;
     } else {
         moveAlive = false;
-        vis.selectAll(".m-"+animation.toString()).remove();
+    //    var prev = currentAnimation -1;
+    //    vis.selectAll(".m-"+prev.toString()).remove();
     }
 }
 
@@ -590,7 +594,18 @@ function getMovieScale () {
         mScale
             .domain([0,100])   //0-100 score from Rotten Tomatoes
             .range([0, circleSize.maxRadius]);
+    } else if (movieSizeOption == 'budget') {
+        mScale
+            .domain([0,d3.max(movieArr,
+                function (d) {
+                    return d3.max(d.movies, function (movie) {
+                        return +movie.budget;
+                    })
+                })
+            ])
+            .range([0, circleSize.maxRadius]);
     }
+
     return mScale;
 }
 
@@ -602,7 +617,7 @@ function movieSize (movie) {
     else if (movieSizeOption == 'likes') {R = mScale(movie.likes); }
     else if (movieSizeOption == 'audience') {R = mScale(movie.audienceScore); }
     else if (movieSizeOption == 'critics') {R = mScale(movie.criticsScore); }
-
+    else if (movieSizeOption == 'budget') {R = mScale(movie.budget); }
     return R;
 }
 
@@ -612,10 +627,14 @@ function movieTip (movie) {
     var titleHTML = '<strong>'+movie.title+'</strong><br>';
     var parse = d3.time.format("%Y-%m-%d").parse;
     var formatDate = d3.time.format("%B %d, %Y");
-    var releaseDate = formatDate(parse(movie.releaseDate));
+    var releaseDate;
+
+    if (movie.releaseDate == '1900-01-01') {
+        releaseDate = 'Unknown';
+    } else {
+    releaseDate = formatDate(parse(movie.releaseDate));
+    }
     var releaseDateHTML = "<strong>Release date: </strong>"+releaseDate+'<br>';
-
-
 
     console.log(releaseDate);
 
@@ -631,8 +650,17 @@ function movieTip (movie) {
     } else if (movieSizeOption == 'critics') {
         optionTitle = 'Critics Score';
         dimension = movie.criticsScore.toString() +'%';
-    }
-    return titleHTML + releaseDateHTML+"<strong>"+optionTitle+":</strong> <span style='color:red'>" + dimension + "</span>";
+    } else if (movieSizeOption == 'budget') {
+        optionTitle = 'Budget';
+        if (movie.budget == "0") {
+            dimension = "Unknown";
+        } else {
+            dimension =  movie.budget +'m';
+        }
+}
+
+return titleHTML + releaseDateHTML
+        + "<strong>"+optionTitle+":</strong> <span style='color:red'>" + dimension + "</span>";
 }
 
 // Citing Phillip Lenssen
@@ -669,6 +697,7 @@ function copyMovieObj (movie) {
         category: movie.category,
         likes: movie.likes,
         theatreCount: movie.theatreCount,
+        budget: movie.budget,
         title: movie.title,
         totalGross: movie.totalGross,
         url: movie.url,
@@ -687,15 +716,22 @@ function freezeAnimation () {
 
 //event binding
 
-// allow user to choose movie sizing option to change radius of circles. force a re-animation
+// allow user to choose movie sizing option to change radius of circles
 $(".moviesize").click(function() {
     $("li.moviesizing.active").removeClass("active");
     $(this).closest('li').addClass('active');
 
-    // restart animation with different sizes
     if (movieSizeOption != $(this).attr('id')) {
         movieSizeOption = $(this).attr('id');
-        animateVis(movieArr[firstWeekIndex+1].weekDates);
+
+        freezeAnimation ();
+        vis.selectAll('.movie')
+            .transition()
+            .duration(1000)
+            .ease('linear')
+            .attr("r", function(d) { return movieSize(d); });
+
+       // animateVis(movieArr[firstWeekIndex+1].weekDates);
     }
 
 });
