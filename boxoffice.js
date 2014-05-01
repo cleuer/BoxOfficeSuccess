@@ -11,12 +11,12 @@ var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
 margin = {
     top: 10,
     right: 50,
-    bottom: 10,
+    bottom: 0,
     left: 50
 };
 
-width = 1200 - margin.left - margin.right;
-height = 550 - margin.bottom - margin.top;
+width = 1100 - margin.left - margin.right;
+height = 500 - margin.bottom - margin.top;
 
 bbVis = {
     x: 100,
@@ -34,7 +34,7 @@ barmargin = {
 };
 
 barwidth = 1200 - barmargin.left - barmargin.right;
-barheight = 320 - barmargin.top - barmargin.bottom;
+barheight = 300 - barmargin.top - barmargin.bottom;
 
 circleSize = {
     maxRadius: 30,
@@ -70,7 +70,7 @@ svg = d3.select("#mainVis").append("svg").attr({
         transform: "translate(" + margin.left + "," + margin.top + ")"
     });
 
-barsvg = d3.select("#mainVis").append("svg").attr({
+barsvg = d3.select("#barVis").append("svg").attr({
     width: barwidth + barmargin.left + barmargin.right,
     height: barheight + barmargin.top + barmargin.bottom
 }).append("g").attr({
