@@ -2,6 +2,9 @@
  * Chris Leuer
  * Box Office Success Visualization
  * April 2014
+ * /Citing
+ * 1 . http://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn
+ * 2.  https://github.com/Caged/d3-tip, http://bl.ocks.org/Caged/6476579
  */
 var bbVis, brush, createVis, dataSet, handle, height, margin, svg, svg2, width,
     circleSize, maxWeeklyGross, maxMoviesPerWeek, vis, xScale, yScale, yAxis, xAxis, rScale, animateDuration,
@@ -663,9 +666,6 @@ return titleHTML + releaseDateHTML
         + "<strong>"+optionTitle+":</strong> <span style='color:red'>" + dimension + "</span>";
 }
 
-// Citing Phillip Lenssen
-// http://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn
-//
 function abbreviateNumber(value) {
     var newValue = value;
     if (value >= 1000) {
