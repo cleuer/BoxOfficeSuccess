@@ -20,9 +20,10 @@
         <div class="col-md-6 highlight">
             <strong>Explore box office success of movies in 2012</strong>
             <p> This visualization animates box office results over a twelve week window.  Each circle represents a movie
-                sized by either theatre counts, Facebook Likes, Rotten Tomatoes Audience or Critics Score or budget.  To start an
+                sized by theatre counts, Facebook likes, Rotten Tomatoes audience or critics score or budget.  To start an
                 animation, select a week in the bar chart. The average movie is show in theatres for four weeks. Most
                 revenue results in the first week, but a successful movie can stay in theatres more than three months.
+                Select a week in the bar chart to start an animation.
             </p>
         </div>
 </div>
@@ -47,13 +48,13 @@
     <div class="col-md-2 highlight">
         <strong>Recipe for success</strong>
         <p>  Big budget movie Dark Rises, released July 20th, 2012, with high audience and critics scores on Rotten Tomatoes,
-             earned more than $220m in the first week and kept a strong theatre presence past week 6.
+             earned more than $220m in the first week and kept a strong theatre presence past week six.
         </p>
     </div>
 
      <div class="col-md-2 highlight">
             <strong>Role of social media and audience scores</strong>
-            <p>John Carter, released March 09th, 2012, demonstrates, low audience score and low social media interest
+            <p>John Carter, released March 9th, 2012, demonstrates, low audience score and low social media interest
                will result in poor box office earnings despite a large budget.
             </p>
      </div>
@@ -66,7 +67,13 @@
         <div id="barVis"></div>
     </div>
 
-
+    <div class="col-md-3">
+        <div class="screencast">
+            <iframe width="300" height="250"
+                    src="http://www.youtube.com/embed/Ghy3kMq3BX8?rel=0">
+            </iframe>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -84,9 +91,9 @@
               <p> The bar chart stops and restarts the animation according to week.  I used a novel approach to animation where new layers
                 of movie data are added as the time series progresses.  Each animation interval potentially introduces new set
                 of movies as circles at week zero. These are new releases. Once a movie is added to the animation a recursive
-                transition is applied, changes it's X and Y position as well as sizing according to user option.  The user can
+                transition is applied, changing it's X and Y position as well as sizing according to user option.  The user can
                 stop the animation by clicking on on any circle as well as hover to view release date and sizing value.
-                To prevent text cluttering, titles are removed after week size.
+                To prevent text cluttering, titles are removed after week six.
             </p>
 
 
@@ -96,6 +103,15 @@
     </div>
 
     <div class="col-md-4 highlight">
+        <strong>Author</strong>
+        <p> Chris Leuer </p>
+
+        <strong>Email</strong>
+        <p> cleuer@g.harvard.edu </p>
+
+        <strong>Project</strong>
+        <p>Final project for CS 171 Data Visualizations </p>
+
         <strong>References</strong>
         <ul>
             <li> <a href="http://cleuer.github.io/BoxOfficeSuccess/BoxOffice_ProcessBook.pdf">Box Office Visualization Process Book</a> </li>
