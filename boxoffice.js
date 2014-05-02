@@ -721,10 +721,11 @@ $(".moviesize").click(function() {
     $("li.moviesizing.active").removeClass("active");
     $(this).closest('li').addClass('active');
 
+    freezeAnimation ();
+
     if (movieSizeOption != $(this).attr('id')) {
         movieSizeOption = $(this).attr('id');
 
-        freezeAnimation ();
         vis.selectAll('.movie')
             .transition()
             .duration(1000)
