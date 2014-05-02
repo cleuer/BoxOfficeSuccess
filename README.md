@@ -11,12 +11,12 @@ Box Office Success Visualization
 ## Overview
 
 The box office visualization animates movie box office results from 2012.  The source code for this visualization
-is on [github](https://github.com/cleuer/BoxOfficeSuccess).
+can be publicly accessed on [github](https://github.com/cleuer/BoxOfficeSuccess).
 
 ### Code is structure on github
 
-+index.html - html main page
-+boxoffice.js - all javascript to create visualization
++ index.html - html main page
++ boxoffice.js - all javascript to create visualization
 + libs director - shared libraries Jquery,FileSave.js, and d3.js
 + scraping directory - boxofficemojo.html and rottentomatoes.html to scrape their respective websites for data
 + data directory- boxoffice2012combined.csv and moviemaster.csv are csv files used for visualization
@@ -47,8 +47,12 @@ python -m http.server
 Data from external websites and APIs was collected and used to display the visualization.
 
 1. Box Office Mojo. Data from [BoxOfficeMojo](http://www.boxofficemojo.com) was used to display budget, gross, titles and theatre count.
+
 2. Facebook.  Data from [Facebook] (http://www.facebook.com) was used to display number of Facebook likes.
+
 3. Rotten Tomatoes. Data from [RottenTomatoes API](http://developer.rottentomatoes.com) was used to display audience and critic scores.
+
+4. IMDB. Data for movie category was entered from [IMDb](http://www.imdb.com).
 
 ### Code
 
@@ -68,3 +72,8 @@ used as starting point to create rottentomatoes.html
 
 7. Eli Grey.  A function from Javascript library [Filesaver.js](https://github.com/cleuer/BoxOfficeSuccess/blob/master/libs/FileSaver.js) was
 used to save array data to csv files.
+
+8. Mike Bostock.  Examples of d3.js [bar chart](http://bl.ocks.org/mbostock/3885705) and [Wealth & Health of Nations](http://bost.ocks.org/mike/nations)
+were used at starting points.
+
+

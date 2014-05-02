@@ -20,7 +20,7 @@
         <div class="col-md-6 highlight">
             <strong>Explore box office success of movies in 2012</strong>
             <p> This visualization animates box office results over a twelve week window.  Each circle represents a movie
-                sized by either theatre counts, Facebook Likes, Rotten Tomatoes Audience or Critics Score.  To start an
+                sized by either theatre counts, Facebook Likes, Rotten Tomatoes Audience or Critics Score or budget.  To start an
                 animation, select a week in the bar chart. The average movie is show in theatres for four weeks. Most
                 revenue results in the first week, but a successful movie can stay in theatres more than three months.
             </p>
@@ -44,32 +44,67 @@
           </div>
       </div>
 
-      <div class="col-md-2 highlight">
-            <strong>Role of social media and audience ratings</strong>
-            <p>
+    <div class="col-md-2 highlight">
+        <strong>Recipe for success</strong>
+        <p>  Big budget movie Dark Rises, released July 20th, 2012, with high audience and critics scores on Rotten Tomatoes,
+             earned more than $220m in the first week and kept a strong theatre presence past week 6.
+        </p>
+    </div>
+
+     <div class="col-md-2 highlight">
+            <strong>Role of social media and audience scores</strong>
+            <p>John Carter, released March 09th, 2012, demonstrates, low audience score and low social media interest
+               will result in poor box office earnings despite a large budget.
             </p>
      </div>
 
 </div>
+
 
 <div class="row">
     <div class="col-md-8">
         <div id="barVis"></div>
     </div>
 
-    <div class="col-md-3">
-        <div class="screencast">
-            <iframe width="300" height="250"
-                    src="http://www.youtube.com/embed/qkNxvSUnlWI?rel=0">
-            </iframe>
-        </div>
-    </div>
 
 </div>
 
+<div class="row">
+    <div class="col-md-1">
+    </div>
+
+    <div class="col-md-4 highlight">
+            <strong>Design and Inspiration</strong>
+            <p>  This Box Office Visualization was developed in d3.js.  The original inspiration was Hans Rosling's
+                2006 <a href="http://www.ted.com/talks/hans_rosling_shows_the_best_stats_you_ve_ever_seen.html">2006 TED talk</a>.
+                I dreamed of creating my own time-series animation on the fun topic of movies.  The user should play
+                around and see what trends they can discover.
+            </p>
+
+              <p> The bar chart stops and restarts the animation according to week.  I used a novel approach to animation where new layers
+                of movie data are added as the time series progresses.  Each animation interval potentially introduces new set
+                of movies as circles at week zero. These are new releases. Once a movie is added to the animation a recursive
+                transition is applied, changes it's X and Y position as well as sizing according to user option.  The user can
+                stop the animation by clicking on on any circle as well as hover to view release date and sizing value.
+                To prevent text cluttering, titles are removed after week size.
+            </p>
+
+
+    </div>
+
+    <div class="col-md-1">
+    </div>
+
+    <div class="col-md-4 highlight">
+        <strong>References</strong>
+        <ul>
+            <li> <a href="http://cleuer.github.io/BoxOfficeSuccess/BoxOffice_ProcessBook.pdf">Box Office Visualization Process Book</a> </li>
+            <li> <a href="http://cleuer.github.io/BoxOfficeSuccess/README.md">Sources</a> </li>
+        </ul>
+    </div>
+</div>
 
 	<script src = "boxoffice.js"></script>
-
 
 </body>
 </html>
