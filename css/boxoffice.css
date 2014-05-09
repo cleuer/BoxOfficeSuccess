@@ -112,6 +112,22 @@ rect.active {
        /* border-radius: 4px; */
 }
 
+.sources {
+    vertical-align: bottom;
+    display:inline-block;
+    padding-top: 8px;
+    padding-bottom: 4px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    margin-right: 0px;
+    /* background-color: #f7f7f9; */
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #333;
+    /* border-radius: 4px; */
+}
+
 .screencast {
     margin-top: 0px;
     position:relative;
