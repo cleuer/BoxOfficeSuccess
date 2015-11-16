@@ -1,10 +1,5 @@
 BoxOfficeSuccess
 ================
-Chris Leuer, CSC-171
-
-Final Project
-
-April 2014
 
 Box Office Success Visualization
 
